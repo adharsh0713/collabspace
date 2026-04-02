@@ -11,15 +11,6 @@ app.get('/health', (req, res) => {
     res.status(200).json({ status: 'OK' });
 });
 
-const authMiddleware = require('./middleware/auth.middleware');
-
-app.get('/protected', authMiddleware, (req, res) => {
-    res.json({
-        message: 'Access granted',
-        user: req.user,
-    });
-});
-
 app.use((req, res, next) => {
     res.status(404).json({ message: 'Route not found' });
 });
