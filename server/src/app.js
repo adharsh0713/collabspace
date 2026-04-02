@@ -11,6 +11,10 @@ app.get('/health', (req, res) => {
     res.status(200).json({ status: 'OK' });
 });
 
+const authRoutes = require('./routes/auth.routes');
+
+app.use('/api/auth', authRoutes);
+
 app.use((req, res, next) => {
     res.status(404).json({ message: 'Route not found' });
 });
