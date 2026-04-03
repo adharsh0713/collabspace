@@ -108,8 +108,31 @@ const getAvailableSeats = async ({ startTime, endTime }) => {
     return seats;
 };
 
+const getSeats = async ({ page = 1, limit = 10, floor, status }) => {
+    const query = {};
+
+    if (floor) query.floor = Number(floor);
+    if (status) query.status = status;
+
+    const skip = (page - 1) * limit;
+
+    const seats = await Seat.find(query)
+        .skip(skip)
+        .limit(Number(limit));
+
+    const total = await Seat.countDocuments(query);
+
+    return {
+        seats,
+        total,
+        page: Number(page),
+        pages: Math.ceil(total / limit),
+    };
+};
+
 module.exports = {
     createSeatBooking,
     checkInSeatBooking,
     getAvailableSeats,
+    getSeats,
 };
