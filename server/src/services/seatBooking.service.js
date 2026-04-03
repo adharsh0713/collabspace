@@ -43,6 +43,49 @@ const createSeatBooking = async ({ userId, seatId, startTime, endTime }) => {
     return booking;
 };
 
+const checkInSeatBooking = async ({ bookingId, userId }) => {
+    const booking = await SeatBooking.findById(bookingId);
+
+    if (!booking) {
+        const error = new Error('Booking not found');
+        error.statusCode = 404;
+        throw error;
+    }
+
+    if (booking.user.toString() !== userId) {
+        const error = new Error('Unauthorized');
+        error.statusCode = 403;
+        throw error;
+    }
+
+    if (booking.status !== 'BOOKED') {
+        const error = new Error('Invalid booking state');
+        error.statusCode = 400;
+        throw error;
+    }
+
+    if (booking.checkedInAt) {
+        const error = new Error('Already checked in');
+        error.statusCode = 400;
+        throw error;
+    }
+
+    const now = new Date();
+
+    // basic window check (can refine later)
+    if (now < booking.startTime || now > booking.endTime) {
+        const error = new Error('Not within booking time');
+        error.statusCode = 400;
+        throw error;
+    }
+
+    booking.checkedInAt = now;
+    await booking.save();
+
+    return booking;
+};
+
 module.exports = {
     createSeatBooking,
+    checkInSeatBooking,
 };
