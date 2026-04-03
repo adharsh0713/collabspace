@@ -22,13 +22,13 @@ const userSchema = new mongoose.Schema(
         },
         role: {
             type: String,
-            enum: ['USER', 'MANAGER', 'ADMIN'],
+            enum: ['USER', 'ADMIN', 'SUPER_ADMIN'],
             default: 'USER',
         },
         organization: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Organization',
-            required: true,
+            required: false,
         },
     },
     { timestamps: true }
