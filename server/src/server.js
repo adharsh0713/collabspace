@@ -17,6 +17,12 @@ const io = new Server(server, {
 global.io = io;
 
 io.on('connection', (socket) => {
+    const { organizationId } = socket.handshake.query;
+
+    if (organizationId) {
+        socket.join(organizationId);
+    }
+
     console.log('Client connected:', socket.id);
 
     socket.on('disconnect', () => {
