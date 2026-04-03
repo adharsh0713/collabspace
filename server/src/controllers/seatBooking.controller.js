@@ -7,6 +7,7 @@ const createBooking = asyncHandler(async (req, res) => {
         seatId: req.body.seatId,
         startTime: req.body.startTime,
         endTime: req.body.endTime,
+        organizationId: req.body.organizationId,
     });
 
     res.status(201).json({
