@@ -108,7 +108,40 @@ const checkInRoomBooking = async ({ bookingId, userId }) => {
     return booking;
 };
 
+const getRoomBookings = async ({
+                                   page = 1,
+                                   limit = 10,
+                                   hostId,
+                                   roomId,
+                                   status,
+                               }) => {
+    const query = {};
+
+    if (hostId) query.host = hostId;
+    if (roomId) query.room = roomId;
+    if (status) query.status = status;
+
+    const skip = (page - 1) * limit;
+
+    const bookings = await RoomBooking.find(query)
+        .populate('room', 'name floor')
+        .populate('host', 'name email')
+        .skip(skip)
+        .limit(Number(limit))
+        .sort({ startTime: -1 });
+
+    const total = await RoomBooking.countDocuments(query);
+
+    return {
+        bookings,
+        total,
+        page: Number(page),
+        pages: Math.ceil(total / limit),
+    };
+};
+
 module.exports = {
     createRoomBooking,
     checkInRoomBooking,
+    getRoomBookings,
 };
