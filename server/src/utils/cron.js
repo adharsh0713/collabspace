@@ -6,6 +6,7 @@ const startCronJobs = () => {
     // every 5 minutes
     cron.schedule('*/5 * * * *', async () => {
         try {
+            console.log('Cron running at:', new Date());
             const now = new Date();
 
             const GRACE_PERIOD_MINUTES = 60;
