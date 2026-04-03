@@ -51,10 +51,13 @@ const createSeatBooking = async ({ userId, seatId, startTime, endTime, organizat
 
     // emit event (safe check)
     if (global.io) {
-        global.io.emit('seatBooked', {
+        global.io.to(organizationId).emit('seatBooked', {
+            bookingId: booking._id,
             seatId,
+            userId,
             startTime,
             endTime,
+            status: 'BOOKED',
         });
     }
 
@@ -104,6 +107,14 @@ const checkInSeatBooking = async ({ bookingId, userId, organizationId }) => {
 
     await booking.save();
 
+    if (global.io) {
+        global.io.to(organizationId).emit('seatCheckedIn', {
+            bookingId: booking._id,
+            seatId: booking.seat,
+            checkedInAt: booking.checkedInAt,
+        });
+    }
+
     return booking;
 };
 
@@ -112,6 +123,7 @@ const getAvailableSeats = async ({ startTime, endTime, organizationId }) => {
         status: 'BOOKED',
         startTime: { $lt: endTime },
         endTime: { $gt: startTime },
+        organization: organizationId,
     })
         .select('seat')
         .lean();
