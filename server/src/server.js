@@ -10,23 +10,25 @@ const { Server } = require('socket.io');
 
 const io = new Server(server, {
     cors: {
-        origin: '*', // adjust in production
+        origin: 'http://localhost:5173',
+        methods: ['GET', 'POST'],
     },
 });
 
 global.io = io;
 
 io.on('connection', (socket) => {
+    console.log('Client connected:', socket.id);
+
     const { organizationId } = socket.handshake.query;
 
     if (organizationId) {
         socket.join(organizationId);
+        console.log(`Joined org room: ${organizationId}`);
     }
 
-    console.log('Client connected:', socket.id);
-
     socket.on('disconnect', () => {
-        console.log('Client disconnected:', socket.id);
+        console.log('Socket disconnected:', socket.id);
     });
 });
 

@@ -1,8 +1,15 @@
 import { io } from 'socket.io-client';
 
-const socket = io('http://localhost:5000', {
-    query: {
-        organizationId: user.organizationId,
-    },
-});
-export default socket;
+let socket = null;
+
+export const connectSocket = (organizationId) => {
+    if (socket) return socket; // prevent duplicate
+
+    socket = io('http://localhost:5000', {
+        query: { organizationId },
+    });
+
+    return socket;
+};
+
+export const getSocket = () => socket;

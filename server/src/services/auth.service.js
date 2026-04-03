@@ -16,10 +16,12 @@ const loginUser = async ({ email, password }) => {
         throw error;
     }
 
+    const organizationId = user.organization?.toString();
+
     const token = generateToken({
         userId: user._id,
         role: user.role,
-        organizationId: user.organization,
+        organizationId,
     });
 
     return {
@@ -29,6 +31,7 @@ const loginUser = async ({ email, password }) => {
             name: user.name,
             email: user.email,
             role: user.role,
+            organizationId,
         },
     };
 };
