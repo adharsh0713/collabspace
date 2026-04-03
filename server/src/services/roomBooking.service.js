@@ -60,6 +60,55 @@ const createRoomBooking = async ({
     return booking;
 };
 
+const checkInRoomBooking = async ({ bookingId, userId }) => {
+    const booking = await RoomBooking.findById(bookingId);
+
+    if (!booking) {
+        const error = new Error('Booking not found');
+        error.statusCode = 404;
+        throw error;
+    }
+
+    // check if user is host or participant
+    const isHost = booking.host.toString() === userId;
+
+    const isParticipant = booking.participants.some(
+        (p) => p.user && p.user.toString() === userId
+    );
+
+    if (!isHost && !isParticipant) {
+        const error = new Error('Unauthorized');
+        error.statusCode = 403;
+        throw error;
+    }
+
+    if (booking.status !== 'BOOKED') {
+        const error = new Error('Invalid booking state');
+        error.statusCode = 400;
+        throw error;
+    }
+
+    if (booking.checkedInAt) {
+        const error = new Error('Already checked in');
+        error.statusCode = 400;
+        throw error;
+    }
+
+    const now = new Date();
+
+    if (now < booking.startTime || now > booking.endTime) {
+        const error = new Error('Not within booking time');
+        error.statusCode = 400;
+        throw error;
+    }
+
+    booking.checkedInAt = now;
+    await booking.save();
+
+    return booking;
+};
+
 module.exports = {
     createRoomBooking,
+    checkInRoomBooking,
 };

@@ -1,5 +1,5 @@
 const asyncHandler = require('../utils/asyncHandler');
-const { createRoomBooking } = require('../services/roomBooking.service');
+const { createRoomBooking, checkInRoomBooking } = require('../services/roomBooking.service');
 
 const createBooking = asyncHandler(async (req, res) => {
     const booking = await createRoomBooking({
@@ -16,6 +16,19 @@ const createBooking = asyncHandler(async (req, res) => {
     });
 });
 
+const checkIn = asyncHandler(async (req, res) => {
+    const booking = await checkInRoomBooking({
+        bookingId: req.params.id,
+        userId: req.user.userId,
+    });
+
+    res.json({
+        success: true,
+        data: booking,
+    });
+});
+
 module.exports = {
     createBooking,
+    checkIn,
 };
