@@ -17,6 +17,8 @@ app.use('/api/auth', authRoutes);
 
 const seatBookingRoutes = require('./routes/seatBooking.routes');
 
+app.use('/api/seats', seatBookingRoutes);
+
 app.use('/api/seat-bookings', seatBookingRoutes);
 
 app.use((req, res, next) => {
