@@ -1,7 +1,7 @@
 const Seat = require('../models/seat.model');
 const SeatBooking = require('../models/seatBooking.model');
 
-const createSeatBooking = async ({ userId, seatId, startTime, endTime }) => {
+const createSeatBooking = async ({ userId, seatId, startTime, endTime, organizationId }) => {
     // validate time
     if (new Date(startTime) >= new Date(endTime)) {
         const error = new Error('Invalid time range');
@@ -9,7 +9,11 @@ const createSeatBooking = async ({ userId, seatId, startTime, endTime }) => {
         throw error;
     }
 
-    const seat = await Seat.findById(seatId);
+    const seat = await Seat.findOne({
+        _id: seatId,
+        organization: organizationId,
+    });
+
     if (!seat) {
         const error = new Error('Seat not found');
         error.statusCode = 404;
@@ -41,6 +45,7 @@ const createSeatBooking = async ({ userId, seatId, startTime, endTime }) => {
         seat: seatId,
         startTime,
         endTime,
+        organization: organizationId
     });
 
     // emit event (safe check)
@@ -55,8 +60,11 @@ const createSeatBooking = async ({ userId, seatId, startTime, endTime }) => {
     return booking;
 };
 
-const checkInSeatBooking = async ({ bookingId, userId }) => {
-    const booking = await SeatBooking.findById(bookingId);
+const checkInSeatBooking = async ({ bookingId, userId, organizationId }) => {
+    const booking = await SeatBooking.findOne({
+        _id: bookingId,
+        organization: organizationId,
+    });
 
     if (!booking) {
         const error = new Error('Booking not found');
@@ -91,14 +99,14 @@ const checkInSeatBooking = async ({ bookingId, userId }) => {
     }
 
     booking.checkedInAt = now;
-    booking.status = 'CHECKED_IN'; // ✅ important state transition
+    booking.status = 'CHECKED_IN';
 
     await booking.save();
 
     return booking;
 };
 
-const getAvailableSeats = async ({ startTime, endTime }) => {
+const getAvailableSeats = async ({ startTime, endTime, organizationId }) => {
     const conflicts = await SeatBooking.find({
         status: 'BOOKED',
         startTime: { $lt: endTime },
@@ -110,6 +118,7 @@ const getAvailableSeats = async ({ startTime, endTime }) => {
     const bookedSeatIds = conflicts.map((c) => c.seat);
 
     const seats = await Seat.find({
+        organization: organizationId,
         _id: { $nin: bookedSeatIds },
         status: 'AVAILABLE',
     }).lean();
@@ -117,8 +126,10 @@ const getAvailableSeats = async ({ startTime, endTime }) => {
     return seats;
 };
 
-const getSeats = async ({ page = 1, limit = 10, floor, status }) => {
-    const query = {};
+const getSeats = async ({ page = 1, limit = 10, floor, status, organizationId }) => {
+    const query = {
+        organization: organizationId,
+    };
 
     if (floor) query.floor = Number(floor);
     if (status) query.status = status;
