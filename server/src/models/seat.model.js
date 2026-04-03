@@ -21,6 +21,11 @@ const seatSchema = new mongoose.Schema(
             x: Number, // for floor map (future)
             y: Number,
         },
+        organization: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Organization',
+            required: true,
+        },
     },
     { timestamps: true }
 );
