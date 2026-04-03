@@ -85,7 +85,31 @@ const checkInSeatBooking = async ({ bookingId, userId }) => {
     return booking;
 };
 
+const getAvailableSeats = async ({ startTime, endTime }) => {
+    // find conflicting bookings
+    const conflicts = await SeatBooking.find({
+        status: 'BOOKED',
+        $or: [
+            {
+                startTime: { $lt: endTime },
+                endTime: { $gt: startTime },
+            },
+        ],
+    }).select('seat');
+
+    const bookedSeatIds = conflicts.map((c) => c.seat);
+
+    // return seats not in conflict + available status
+    const seats = await Seat.find({
+        _id: { $nin: bookedSeatIds },
+        status: 'AVAILABLE',
+    });
+
+    return seats;
+};
+
 module.exports = {
     createSeatBooking,
     checkInSeatBooking,
+    getAvailableSeats,
 };
