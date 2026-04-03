@@ -47,11 +47,6 @@ const startCronJobs = () => {
                 }
             );
 
-            // logs (only when changes happen)
-            if (seatUpdates > 0) {
-                console.log(`Seat NO_SHOW updated: ${seatUpdates}`);
-            }
-
             if (roomUpdates > 0) {
                 console.log(`Room NO_SHOW updated: ${roomUpdates}`);
             }
