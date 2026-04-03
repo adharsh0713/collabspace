@@ -2,6 +2,13 @@ const Seat = require('../models/seat.model');
 const SeatBooking = require('../models/seatBooking.model');
 
 const createSeatBooking = async ({ userId, seatId, startTime, endTime }) => {
+    // validate time
+    if (new Date(startTime) >= new Date(endTime)) {
+        const error = new Error('Invalid time range');
+        error.statusCode = 400;
+        throw error;
+    }
+
     const seat = await Seat.findById(seatId);
     if (!seat) {
         const error = new Error('Seat not found');
@@ -15,16 +22,12 @@ const createSeatBooking = async ({ userId, seatId, startTime, endTime }) => {
         throw error;
     }
 
-    // overlap check
+    // overlap check (clean)
     const conflict = await SeatBooking.findOne({
         seat: seatId,
         status: 'BOOKED',
-        $or: [
-            {
-                startTime: { $lt: endTime },
-                endTime: { $gt: startTime },
-            },
-        ],
+        startTime: { $lt: endTime },
+        endTime: { $gt: startTime },
     });
 
     if (conflict) {
@@ -40,23 +43,14 @@ const createSeatBooking = async ({ userId, seatId, startTime, endTime }) => {
         endTime,
     });
 
-    // after booking is created
-
-    const booking = await SeatBooking.create({
-        user: userId,
-        seat: seatId,
-        startTime,
-        endTime,
-    });
-
-    // emit event
-    global.io.emit('seatBooked', {
-        seatId,
-        startTime,
-        endTime,
-    });
-
-    return booking;
+    // emit event (safe check)
+    if (global.io) {
+        global.io.emit('seatBooked', {
+            seatId,
+            startTime,
+            endTime,
+        });
+    }
 
     return booking;
 };
@@ -90,7 +84,6 @@ const checkInSeatBooking = async ({ bookingId, userId }) => {
 
     const now = new Date();
 
-    // basic window check (can refine later)
     if (now < booking.startTime || now > booking.endTime) {
         const error = new Error('Not within booking time');
         error.statusCode = 400;
@@ -98,30 +91,28 @@ const checkInSeatBooking = async ({ bookingId, userId }) => {
     }
 
     booking.checkedInAt = now;
+    booking.status = 'CHECKED_IN'; // ✅ important state transition
+
     await booking.save();
 
     return booking;
 };
 
 const getAvailableSeats = async ({ startTime, endTime }) => {
-    // find conflicting bookings
     const conflicts = await SeatBooking.find({
         status: 'BOOKED',
-        $or: [
-            {
-                startTime: { $lt: endTime },
-                endTime: { $gt: startTime },
-            },
-        ],
-    }).select('seat');
+        startTime: { $lt: endTime },
+        endTime: { $gt: startTime },
+    })
+        .select('seat')
+        .lean();
 
     const bookedSeatIds = conflicts.map((c) => c.seat);
 
-    // return seats not in conflict + available status
     const seats = await Seat.find({
         _id: { $nin: bookedSeatIds },
         status: 'AVAILABLE',
-    });
+    }).lean();
 
     return seats;
 };
@@ -134,11 +125,10 @@ const getSeats = async ({ page = 1, limit = 10, floor, status }) => {
 
     const skip = (page - 1) * limit;
 
-    const seats = await Seat.find(query)
-        .skip(skip)
-        .limit(Number(limit));
-
-    const total = await Seat.countDocuments(query);
+    const [seats, total] = await Promise.all([
+        Seat.find(query).skip(skip).limit(Number(limit)).lean(),
+        Seat.countDocuments(query),
+    ]);
 
     return {
         seats,
