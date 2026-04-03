@@ -40,6 +40,24 @@ const createSeatBooking = async ({ userId, seatId, startTime, endTime }) => {
         endTime,
     });
 
+    // after booking is created
+
+    const booking = await SeatBooking.create({
+        user: userId,
+        seat: seatId,
+        startTime,
+        endTime,
+    });
+
+    // emit event
+    global.io.emit('seatBooked', {
+        seatId,
+        startTime,
+        endTime,
+    });
+
+    return booking;
+
     return booking;
 };
 
