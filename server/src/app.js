@@ -15,6 +15,10 @@ const authRoutes = require('./routes/auth.routes');
 
 app.use('/api/auth', authRoutes);
 
+const seatBookingRoutes = require('./routes/seatBooking.routes');
+
+app.use('/api/seat-bookings', seatBookingRoutes);
+
 app.use((req, res, next) => {
     res.status(404).json({ message: 'Route not found' });
 });
