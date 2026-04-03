@@ -32,6 +32,7 @@ const createSeatBooking = async ({ userId, seatId, startTime, endTime, organizat
         status: 'BOOKED',
         startTime: { $lt: endTime },
         endTime: { $gt: startTime },
+        organization: organizationId
     });
 
     if (conflict) {

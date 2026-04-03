@@ -7,7 +7,7 @@ const createBooking = asyncHandler(async (req, res) => {
         seatId: req.body.seatId,
         startTime: req.body.startTime,
         endTime: req.body.endTime,
-        organizationId: req.body.organizationId,
+        organizationId: req.user.organizationId,
     });
 
     res.status(201).json({
@@ -20,6 +20,7 @@ const checkIn = asyncHandler(async (req, res) => {
     const booking = await checkInSeatBooking({
         bookingId: req.params.id,
         userId: req.user.userId,
+        organization: req.user.organization,
     });
 
     res.status(200).json({
@@ -31,7 +32,7 @@ const checkIn = asyncHandler(async (req, res) => {
 const getAvailable = asyncHandler(async (req, res) => {
     const { startTime, endTime } = req.query;
 
-    const seats = await getAvailableSeats({ startTime, endTime });
+    const seats = await getAvailableSeats({ startTime, endTime, organizationId: req.user.organizationId });
 
     res.json({
         success: true,
@@ -42,7 +43,7 @@ const getAvailable = asyncHandler(async (req, res) => {
 const getAllSeats = asyncHandler(async (req, res) => {
     const { page, limit, floor, status } = req.query;
 
-    const data = await getSeats({ page, limit, floor, status });
+    const data = await getSeats({ page, limit, floor, status, organizationId: req.user.organizationId });
 
     res.json({
         success: true,

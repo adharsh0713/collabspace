@@ -7,8 +7,12 @@ const createRoomBooking = async ({
                                      startTime,
                                      endTime,
                                      participants = [],
+                                    organizationId,
                                  }) => {
-    const room = await Room.findById(roomId);
+    const room = await Room.findOne({
+        _id: roomId,
+        organization: organizationId,
+    });
 
     if (!room) {
         const error = new Error('Room not found');
@@ -34,6 +38,7 @@ const createRoomBooking = async ({
     // overlap check
     const conflict = await RoomBooking.findOne({
         room: roomId,
+        organization: organizationId,
         status: 'BOOKED',
         $or: [
             {
@@ -55,6 +60,7 @@ const createRoomBooking = async ({
         startTime,
         endTime,
         participants,
+        organization: organizationId,
     });
 
     return booking;
