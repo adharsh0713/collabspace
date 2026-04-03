@@ -42,6 +42,11 @@ const roomBookingSchema = new mongoose.Schema(
         checkedInAt: {
             type: Date,
         },
+        organization: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Organization',
+            required: true,
+        },
     },
     { timestamps: true }
 );
