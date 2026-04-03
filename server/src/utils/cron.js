@@ -13,16 +13,27 @@ const startCronJobs = () => {
             const cutoff = new Date(now.getTime() - GRACE_PERIOD_MINUTES * 60000);
 
             // Seat bookings
-            const { modifiedCount: seatUpdates } = await SeatBooking.updateMany(
-                {
-                    status: 'BOOKED',
-                    checkedInAt: { $exists: false },
-                    startTime: { $lt: cutoff },
-                },
-                {
-                    $set: { status: 'NO_SHOW' },
-                }
-            );
+            const expiredSeatBookings = await SeatBooking.find({
+                status: 'BOOKED',
+                checkedInAt: { $exists: false },
+                startTime: { $lt: cutoff },
+            });
+
+            for (const booking of expiredSeatBookings) {
+                booking.status = 'NO_SHOW';
+                await booking.save();
+
+                // emit event
+                global.io.emit('seatReleased', {
+                    seatId: booking.seat,
+                    startTime: booking.startTime,
+                    endTime: booking.endTime,
+                });
+            }
+
+            if (expiredSeatBookings.length > 0) {
+                console.log(`Seat NO_SHOW updated: ${expiredSeatBookings.length}`);
+            }
 
             // Room bookings
             const { modifiedCount: roomUpdates } = await RoomBooking.updateMany(
