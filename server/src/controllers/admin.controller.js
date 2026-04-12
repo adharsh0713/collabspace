@@ -32,8 +32,17 @@ const createOrg = asyncHandler(async (req, res) => {
     });
 });
 
+const getRooms = async (req, res) => {
+    const rooms = await Room.find({
+        organization: req.user.organizationId,
+    });
+
+    res.json({ success: true, data: rooms });
+};
+
 module.exports = {
     createOrg,
     createSeat,
     createRoom,
+    getRooms
 };
