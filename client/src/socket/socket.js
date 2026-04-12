@@ -1,6 +1,6 @@
 import { io } from 'socket.io-client';
 
-let socket = null;
+let socket;
 
 export const connectSocket = (organizationId) => {
     if (socket) return socket; // prevent duplicate
