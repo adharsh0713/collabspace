@@ -1,46 +1,57 @@
 import { useState } from 'react';
 import { loginUser } from '../services/authService';
-import { useAuth } from '../context/AuthContext.jsx';
+import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
 const Login = () => {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
+    const [form, setForm] = useState({
+        email: '',
+        password: '',
+    });
 
     const { login } = useAuth();
     const navigate = useNavigate();
+
+    const handleChange = (e) => {
+        setForm((prev) => ({
+            ...prev,
+            [e.target.name]: e.target.value,
+        }));
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
 
         try {
-            const res = await loginUser({ email, password });
-            login(res.data);
+            const data = await loginUser(form);
+            login(data);
 
-            navigate('/'); // redirect after login
+            navigate('/');
         } catch (err) {
             console.error(err.response?.data?.message || 'Login failed');
         }
     };
 
     return (
-        <form onSubmit={handleSubmit}>
-            <input
-                type="email"
-                placeholder="Email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-            />
+        <div style={{ maxWidth: 300, margin: '100px auto' }}>
+            <form onSubmit={handleSubmit}>
+                <input
+                    name="email"
+                    type="email"
+                    placeholder="Email"
+                    onChange={handleChange}
+                />
 
-            <input
-                type="password"
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-            />
+                <input
+                    name="password"
+                    type="password"
+                    placeholder="Password"
+                    onChange={handleChange}
+                />
 
-            <button type="submit">Login</button>
-        </form>
+                <button type="submit">Login</button>
+            </form>
+        </div>
     );
 };
 
