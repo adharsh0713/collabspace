@@ -162,9 +162,35 @@ const getSeats = async ({ page = 1, limit = 10, floor, status, organizationId })
     };
 };
 
+const getSeatBookings = async ({ userId, organizationId, page = 1, limit = 10 }) => {
+    const query = {
+        user: userId,
+        organization: organizationId,
+    };
+
+    const skip = (page - 1) * limit;
+
+    const [bookings, total] = await Promise.all([
+        SeatBooking.find(query)
+            .populate('seat', 'code floor') // ✅ THIS is where populate goes
+            .sort({ startTime: -1 })
+            .skip(skip)
+            .limit(Number(limit)),
+        SeatBooking.countDocuments(query),
+    ]);
+
+    return {
+        bookings,
+        total,
+        page: Number(page),
+        pages: Math.ceil(total / limit),
+    };
+};
+
 module.exports = {
     createSeatBooking,
     checkInSeatBooking,
     getAvailableSeats,
     getSeats,
+    getSeatBookings
 };

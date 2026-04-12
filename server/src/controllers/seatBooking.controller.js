@@ -51,9 +51,26 @@ const getAllSeats = asyncHandler(async (req, res) => {
     });
 });
 
+const getMyBookings = asyncHandler(async (req, res) => {
+    const { page, limit } = req.query;
+
+    const data = await getSeatBookings({
+        userId: req.user.userId,
+        organizationId: req.user.organizationId,
+        page,
+        limit,
+    });
+
+    res.json({
+        success: true,
+        data,
+    });
+});
+
 module.exports = {
     createBooking,
     checkIn,
     getAvailable,
     getAllSeats,
+    getMyBookings,
 };
