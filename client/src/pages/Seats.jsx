@@ -2,11 +2,14 @@ import { useEffect, useState } from 'react';
 import { getSeats, createSeatBooking } from '../services/seatService';
 import { useAuth } from '../context/AuthContext';
 import { connectSocket } from '../socket/socket';
+import FloorMap from '../components/FloorMap';
 
 const Seats = () => {
     const { user } = useAuth();
 
     const [seats, setSeats] = useState([]);
+
+    const [selectedSeat, setSelectedSeat] = useState(null);
 
     const [filters, setFilters] = useState({
         floor: '',
@@ -62,7 +65,7 @@ const Seats = () => {
 
         fetchSeats();
 
-        const socket = connectSocket(user.organizationId);
+        const socket = connectSocket(user.organization);
 
         socket.on('seatBooked', fetchSeats);
         socket.on('seatReleased', fetchSeats);
@@ -93,6 +96,10 @@ const Seats = () => {
         }
 
         try {
+            if (selectedSeat.status !== 'AVAILABLE') {
+                alert('Seat not available');
+                return;
+            }
             await createSeatBooking({
                 seatId,
                 startTime: time.startTime,
@@ -111,22 +118,6 @@ const Seats = () => {
     return (
         <div>
             <h2>Seats</h2>
-
-            {/* Time Selection */}
-            <input
-                type="datetime-local"
-                onChange={(e) =>
-                    setTime((prev) => ({ ...prev, startTime: e.target.value }))
-                }
-            />
-
-            <input
-                type="datetime-local"
-                onChange={(e) =>
-                    setTime((prev) => ({ ...prev, endTime: e.target.value }))
-                }
-            />
-
             {/* Filters */}
             <div>
                 <select name="floor" onChange={handleFilterChange}>
@@ -148,16 +139,42 @@ const Seats = () => {
                 {seats.length === 0 ? (
                     <p>No seats found</p>
                 ) : (
-                    seats.map((seat) => (
-                        <div key={seat._id} style={{ border: '1px solid', margin: 8 }}>
-                            <p>{seat.code}</p>
-                            <p>{seat.status}</p>
+                    <FloorMap
+                        seats={seats}
+                        selectedSeat={selectedSeat}
+                        onSelect={(seat) => setSelectedSeat(seat)}
+                    />
+                )}
+                {selectedSeat && (
+                    <div style={{ marginTop: 20 }}>
+                        <h3>Selected: {selectedSeat.code}</h3>
+                        <p>Status: {selectedSeat.status}</p>
 
-                            <button onClick={() => handleBook(seat._id)}>
-                                Book
-                            </button>
-                        </div>
-                    ))
+                        <input
+                            type="datetime-local"
+                            onChange={(e) =>
+                                setTime((p) => ({ ...p, startTime: e.target.value }))
+                            }
+                        />
+
+                        <input
+                            type="datetime-local"
+                            onChange={(e) =>
+                                setTime((p) => ({ ...p, endTime: e.target.value }))
+                            }
+                        />
+
+                        <button
+                            disabled={
+                                selectedSeat.status !== 'AVAILABLE' ||
+                                !time.startTime ||
+                                !time.endTime
+                            }
+                            onClick={() => handleBook(selectedSeat._id)}
+                        >
+                            Book Seat
+                        </button>
+                    </div>
                 )}
             </div>
 
