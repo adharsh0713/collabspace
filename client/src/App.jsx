@@ -1,9 +1,9 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext.jsx';
-import Login from './pages/Login';
+import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
+import Login from './pages/Login';
 
-const Home = () => <h1>Dashboard</h1>;
+const Home = () => <h2>Dashboard</h2>;
 
 function App() {
     return (
