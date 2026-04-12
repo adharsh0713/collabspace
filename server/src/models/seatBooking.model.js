@@ -22,7 +22,7 @@ const seatBookingSchema = new mongoose.Schema(
         },
         status: {
             type: String,
-            enum: ['BOOKED', 'CANCELLED', 'COMPLETED', 'NO_SHOW'],
+            enum: ['BOOKED', 'CHECKED_IN', 'CANCELLED', 'COMPLETED', 'NO_SHOW'],
             default: 'BOOKED',
         },
         checkedInAt: {
