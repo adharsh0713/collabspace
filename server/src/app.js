@@ -29,4 +29,7 @@ app.use((req, res, next) => {
 
 app.use(errorMiddleware);
 
+const analyticsRoutes = require('./routes/analytics.routes');
+app.use('/api/analytics', analyticsRoutes);
+
 module.exports = app;
