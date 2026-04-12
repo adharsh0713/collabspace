@@ -6,6 +6,7 @@ const Home = () => {
             <h2>CollabSpace</h2>
 
             <Link to="/seats">Go to Seats</Link>
+            <Link to="/rooms">Rooms</Link>
         </div>
     );
 };

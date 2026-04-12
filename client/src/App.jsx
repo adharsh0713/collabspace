@@ -4,6 +4,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Seats from './pages/Seats';
+import Rooms from './pages/Rooms';
 
 function App() {
     return (
@@ -35,6 +36,14 @@ function App() {
                         element={
                             <ProtectedRoute>
                                 <Seats />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/rooms"
+                        element={
+                            <ProtectedRoute>
+                                <Rooms />
                             </ProtectedRoute>
                         }
                     />
