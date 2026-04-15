@@ -10,7 +10,7 @@ const { Server } = require('socket.io');
 
 const io = new Server(server, {
     cors: {
-        origin: 'http://localhost:5173',
+        origin: process.env.CLIENT_URL || 'http://localhost:5173',
         methods: ['GET', 'POST'],
     },
 });
@@ -18,17 +18,23 @@ const io = new Server(server, {
 global.io = io;
 
 io.on('connection', (socket) => {
-    console.log('Client connected:', socket.id);
+    if (process.env.NODE_ENV === 'development') {
+        console.log('Client connected:', socket.id);
+    }
 
     const { organizationId } = socket.handshake.query;
 
     if (organizationId) {
         socket.join(organizationId);
-        console.log(`Joined org room: ${organizationId}`);
+        if (process.env.NODE_ENV === 'development') {
+            console.log(`Joined org room: ${organizationId}`);
+        }
     }
 
     socket.on('disconnect', () => {
-        console.log('Socket disconnected:', socket.id);
+        if (process.env.NODE_ENV === 'development') {
+            console.log('Socket disconnected:', socket.id);
+        }
     });
 });
 

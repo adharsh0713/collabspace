@@ -2,6 +2,23 @@ const asyncHandler = require('../utils/asyncHandler');
 const { createOrganizationWithAdmin } = require('../services/admin.service');
 const Seat = require('../models/seat.model');
 const Room = require('../models/room.model');
+const User = require('../models/user.model');
+
+//create user
+const createUser = async (req, res) => {
+    const user = await User.create({
+        name: req.body.name,
+        email: req.body.email,
+        password: req.body.password,
+        role: 'USER',
+        organization: req.user.organizationId,
+    });
+
+    res.status(201).json({
+        success: true,
+        data: user,
+    });
+};
 
 // create seat
 const createSeat = async (req, res) => {
@@ -44,5 +61,6 @@ module.exports = {
     createOrg,
     createSeat,
     createRoom,
+    createUser,
     getRooms
 };

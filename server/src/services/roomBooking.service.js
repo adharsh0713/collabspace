@@ -120,8 +120,11 @@ const getRoomBookings = async ({
                                    hostId,
                                    roomId,
                                    status,
+                                   organizationId,
                                }) => {
-    const query = {};
+    const query = {
+        organization: organizationId,
+    };
 
     if (hostId) query.host = hostId;
     if (roomId) query.room = roomId;
@@ -130,7 +133,7 @@ const getRoomBookings = async ({
     const skip = (page - 1) * limit;
 
     const bookings = await RoomBooking.find(query)
-        .populate('room', 'name floor')
+        .populate('room', 'name capacity')
         .populate('host', 'name email')
         .skip(skip)
         .limit(Number(limit))

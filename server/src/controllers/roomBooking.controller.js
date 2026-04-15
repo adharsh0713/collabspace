@@ -8,7 +8,7 @@ const createBooking = asyncHandler(async (req, res) => {
         startTime: req.body.startTime,
         endTime: req.body.endTime,
         participants: req.body.participants,
-        organization: req.user.organization,
+        organizationId: req.user.organizationId,
     });
 
     res.status(201).json({
@@ -38,7 +38,7 @@ const getAllBookings = asyncHandler(async (req, res) => {
         roomId,
         status,
         hostId: req.user.userId,
-        organization: req.user.organization,
+        organizationId: req.user.organizationId,
     });
 
     res.json({

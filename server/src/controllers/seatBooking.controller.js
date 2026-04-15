@@ -1,4 +1,5 @@
 const asyncHandler = require('../utils/asyncHandler');
+const SeatBooking = require('../models/seatBooking.model');
 const { createSeatBooking, checkInSeatBooking, getAvailableSeats, getSeats } = require('../services/seatBooking.service');
 
 const createBooking = asyncHandler(async (req, res) => {
@@ -20,7 +21,7 @@ const checkIn = asyncHandler(async (req, res) => {
     const booking = await checkInSeatBooking({
         bookingId: req.params.id,
         userId: req.user.userId,
-        organization: req.user.organization,
+        organizationId: req.user.organizationId,
     });
 
     res.status(200).json({
@@ -52,18 +53,14 @@ const getAllSeats = asyncHandler(async (req, res) => {
 });
 
 const getMyBookings = asyncHandler(async (req, res) => {
-    const { page, limit } = req.query;
-
-    const data = await getSeatBookings({
-        userId: req.user.userId,
-        organizationId: req.user.organizationId,
-        page,
-        limit,
-    });
+    const bookings = await SeatBooking.find({
+        user: req.user.userId,
+        organization: req.user.organizationId,
+    }).populate('seat', 'code floor');
 
     res.json({
         success: true,
-        data,
+        data: bookings,
     });
 });
 
