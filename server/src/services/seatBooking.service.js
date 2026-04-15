@@ -46,7 +46,7 @@ const createSeatBooking = async ({ userId, seatId, startTime, endTime, organizat
         seat: seatId,
         startTime,
         endTime,
-        organization: organizationId
+        organization: organizationId,
     });
 
     // emit event (safe check)
@@ -172,7 +172,8 @@ const getSeatBookings = async ({ userId, organizationId, page = 1, limit = 10 })
 
     const [bookings, total] = await Promise.all([
         SeatBooking.find(query)
-            .populate('seat', 'code floor') // ✅ THIS is where populate goes
+            .populate('seat', 'code floor')
+            .populate('user', 'name email')
             .sort({ startTime: -1 })
             .skip(skip)
             .limit(Number(limit)),
