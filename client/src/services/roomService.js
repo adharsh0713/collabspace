@@ -19,3 +19,8 @@ export const getMyRoomBookings = async (params) => {
     const res = await api.get('/room-bookings', { params });
     return res.data.data;
 };
+
+export const getRooms = async () => {
+    const res = await api.get('/rooms');
+    return res.data.data;
+};
