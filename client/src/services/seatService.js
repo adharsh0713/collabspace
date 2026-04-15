@@ -1,7 +1,7 @@
 import api from './api';
 
 export const getSeats = async (params) => {
-    const res = await api.get('/seat-bookings', { params });
+    const res = await api.get('/seats', { params });
     return res.data.data;
 };
 

@@ -5,7 +5,7 @@ let socket;
 export const connectSocket = (organizationId) => {
     if (socket) return socket; // prevent duplicate
 
-    socket = io('http://localhost:5000', {
+    socket = io(import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000', {
         query: { organizationId },
     });
 
