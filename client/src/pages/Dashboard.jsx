@@ -1,331 +1,190 @@
 import { useEffect, useState } from 'react';
-import {checkInSeatBooking, getMySeatBookings} from '../services/seatService';
-import {
-    getMyRoomBookings,
-    checkInRoomBooking,
-} from '../services/roomService';
-import { Card, Button, Badge } from '../components/ui';
+import { Link } from 'react-router-dom';
+import { formatDistanceToNow, isFuture, isPast } from 'date-fns';
+import { Calendar, MonitorSmartphone, MapPin, Clock } from 'lucide-react';
+import { checkInSeatBooking, getMySeatBookings } from '../services/seatService';
+import { getMyRoomBookings, checkInRoomBooking } from '../services/roomService';
 import { useToast } from '../context/ToastContext';
+import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
+import Badge from '../components/ui/Badge';
+import { Skeleton } from '../components/ui/Skeleton';
+
+const formatDate = (d) => {
+    if (!d) return '—';
+    try {
+        return new Date(d).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    } catch { return '—'; }
+};
 
 const Dashboard = () => {
-    console.log("Dashboard mounted");
     const [seatBookings, setSeatBookings] = useState([]);
     const [roomBookings, setRoomBookings] = useState([]);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState(null);
+    const [loading, setLoading] = useState(true);
     const { success, error: toastError } = useToast();
 
     const fetchData = async () => {
         setLoading(true);
-        setError(null);
         try {
-            console.log("Fetching dashboard data...");
-            const seats = await getMySeatBookings();
-            const rooms = await getMyRoomBookings();
-
-            console.log("Seat API response:", seats);
-            console.log("Room API response:", rooms);
-
-            // Standardized data handling
-            const seatData = Array.isArray(seats) ? seats : seats?.bookings || seats?.docs || [];
-            const roomData = Array.isArray(rooms) ? rooms : rooms?.bookings || rooms?.docs || [];
-
-            console.log("Processed seat data:", seatData);
-            console.log("Processed room data:", roomData);
-
-            // Always set arrays, never undefined/null
-            setSeatBookings(Array.isArray(seatData) ? seatData : []);
-            setRoomBookings(Array.isArray(roomData) ? roomData : []);
-        } catch (error) {
-            console.error("Failed to fetch bookings:", error);
-            setError("Failed to load bookings");
+            const [seats, rooms] = await Promise.all([getMySeatBookings(), getMyRoomBookings()]);
+            setSeatBookings(Array.isArray(seats) ? seats : seats?.bookings || seats?.docs || []);
+            setRoomBookings(Array.isArray(rooms) ? rooms : rooms?.bookings || rooms?.docs || []);
+        } catch {
             toastError('Failed to fetch bookings');
-            // Always set empty arrays on error
-            setSeatBookings([]);
-            setRoomBookings([]);
-        } finally {
-            setLoading(false);
-        }
+            setSeatBookings([]); setRoomBookings([]);
+        } finally { setLoading(false); }
     };
 
-    useEffect(() => {
-        fetchData();
-    }, []);
+    useEffect(() => { fetchData(); }, []);
 
-    const handleSeatCheckIn = async (id) => {
-        if (!id) {
-            console.error("No booking ID provided for seat check-in");
-            toastError('Invalid booking ID');
-            return;
-        }
-        
-        try {
-            console.log("Checking in seat booking:", id);
-            await checkInSeatBooking(id);
-            success('Seat checked in successfully!');
-            fetchData();
-        } catch (error) {
-            console.error('Seat check-in failed:', error);
-            toastError('Check-in failed');
-        }
+    const checkInSeat = async (id) => {
+        try { await checkInSeatBooking(id); success('Seat Checked in!'); fetchData(); }
+        catch { toastError('Check-in failed'); }
+    };
+    const checkInRoom = async (id) => {
+        try { await checkInRoomBooking(id); success('Room Checked in!'); fetchData(); }
+        catch { toastError('Check-in failed'); }
     };
 
-    const handleRoomCheckIn = async (id) => {
-        if (!id) {
-            console.error("No booking ID provided for room check-in");
-            toastError('Invalid booking ID');
-            return;
-        }
-        
-        try {
-            console.log("Checking in room booking:", id);
-            await checkInRoomBooking(id);
-            success('Room checked in successfully!');
-            fetchData();
-        } catch (error) {
-            console.error('Room check-in failed:', error);
-            toastError('Check-in failed');
-        }
-    };
+    const safe = (arr) => Array.isArray(arr) ? arr : [];
+    const allBookings = [...safe(seatBookings), ...safe(roomBookings)]
+        .filter(b => b?._id && b.status === 'BOOKED' && isFuture(new Date(b.startTime)))
+        .sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
 
-    // Standardized calculated values with safety checks
-    const totalSeatBookings = Array.isArray(seatBookings) ? seatBookings.length : 0;
-    const totalRoomBookings = Array.isArray(roomBookings) ? roomBookings.length : 0;
-    const safeSeatBookings = Array.isArray(seatBookings) ? seatBookings : [];
-    const safeRoomBookings = Array.isArray(roomBookings) ? roomBookings : [];
-    const allBookings = [...safeSeatBookings, ...safeRoomBookings];
-    const noShows = allBookings.filter(b => b && b.status === 'NO_SHOW').length;
-    const activeBookings = allBookings.filter(b => b && b.status === 'BOOKED').length;
-
-    const formatDate = (dateString) => {
-        if (!dateString) return 'Invalid date';
-        try {
-            const date = new Date(dateString);
-            if (isNaN(date.getTime())) return 'Invalid date';
-            return date.toLocaleString('en-US', {
-                month: 'short',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-            });
-        } catch (error) {
-            console.error('Date formatting error:', error);
-            return 'Invalid date';
-        }
-    };
-
-    const getStatusBadge = (status) => {
-        const variant = status === 'BOOKED' ? 'booked' : 
-                       status === 'CHECKED_IN' ? 'success' : 
-                       status === 'NO_SHOW' ? 'error' : 'default';
-        return <Badge variant={variant}>{status.replace('_', ' ')}</Badge>;
-    };
-
-    // Comprehensive loading state - ALWAYS render something
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center min-h-screen bg-gray-900">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                    <div className="text-white text-lg">Loading dashboard...</div>
-                </div>
-            </div>
-        );
-    }
-
-    // Error state with retry - ALWAYS render something
-    if (error) {
-        return (
-            <div className="flex items-center justify-center min-h-screen bg-gray-900">
-                <div className="text-center">
-                    <div className="text-red-400 text-lg mb-4">Failed to load dashboard</div>
-                    <button 
-                        onClick={fetchData}
-                        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                    >
-                        Retry
-                    </button>
-                </div>
-            </div>
-        );
-    }
-
-    // Final safety check - NEVER render with undefined data
-    if (!Array.isArray(seatBookings) || !Array.isArray(roomBookings)) {
-        console.log("Dashboard: Invalid data state, showing loading");
-        return (
-            <div className="flex items-center justify-center min-h-screen bg-gray-900">
-                <div className="text-white text-lg">Loading dashboard...</div>
-            </div>
-        );
-    }
+    const nextMeeting = allBookings[0];
 
     return (
-        <div className="space-y-6">
-            <div>
-                <h1 className="text-3xl font-bold text-white">Dashboard</h1>
-                <p className="text-gray-400 mt-2">Overview of your bookings and workspace utilization</p>
+        <div className="space-y-8 animate-in fade-in duration-500">
+            {/* Header & Quick Actions */}
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+                <div>
+                    <h1 className="text-3xl font-bold tracking-tight text-slate-900">Dashboard</h1>
+                    <p className="text-slate-500 mt-1">Manage your workspace and meetings</p>
+                </div>
+                <div className="flex items-center gap-3">
+                    <Link to="/seats" className="inline-flex items-center justify-center rounded-lg bg-white border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 transition-colors">
+                        <MonitorSmartphone className="mr-2 h-4 w-4" />
+                        Book Seat
+                    </Link>
+                    <Link to="/rooms" className="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white shadow hover:bg-primary-700 transition-colors">
+                        <Calendar className="mr-2 h-4 w-4" />
+                        Book Room
+                    </Link>
+                </div>
             </div>
 
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <Card className="p-6 bg-gray-800 border-gray-700">
-                    <div className="flex items-center">
-                        <div className="p-3 bg-blue-600/20 rounded-lg">
-                            <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" />
-                            </svg>
-                        </div>
-                        <div className="ml-4">
-                            <p className="text-sm font-medium text-gray-400">Total Seat Bookings</p>
-                            <p className="text-2xl font-bold text-white">{totalSeatBookings}</p>
-                        </div>
-                    </div>
-                </Card>
-
-                <Card className="p-6 bg-gray-800 border-gray-700">
-                    <div className="flex items-center">
-                        <div className="p-3 bg-green-600/20 rounded-lg">
-                            <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                            </svg>
-                        </div>
-                        <div className="ml-4">
-                            <p className="text-sm font-medium text-gray-400">Total Room Bookings</p>
-                            <p className="text-2xl font-bold text-white">{totalRoomBookings}</p>
-                        </div>
-                    </div>
-                </Card>
-
-                <Card className="p-6 bg-gray-800 border-gray-700">
-                    <div className="flex items-center">
-                        <div className="p-3 bg-red-600/20 rounded-lg">
-                            <svg className="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                        </div>
-                        <div className="ml-4">
-                            <p className="text-sm font-medium text-gray-400">No Shows</p>
-                            <p className="text-2xl font-bold text-white">{noShows}</p>
-                        </div>
-                    </div>
-                </Card>
-
-                <Card className="p-6 bg-gray-800 border-gray-700">
-                    <div className="flex items-center">
-                        <div className="p-3 bg-purple-600/20 rounded-lg">
-                            <svg className="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                            </svg>
-                        </div>
-                        <div className="ml-4">
-                            <p className="text-sm font-medium text-gray-400">Active Bookings</p>
-                            <p className="text-2xl font-bold text-white">{activeBookings}</p>
-                        </div>
-                    </div>
-                </Card>
-            </div>
-
-            {/* My Bookings Section */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Seat Bookings */}
-                <Card className="p-6 bg-gray-800 border-gray-700">
-                    <div className="flex items-center justify-between mb-6">
-                        <h2 className="text-xl font-semibold text-white">My Seat Bookings</h2>
-                        <Badge variant="default" className="bg-gray-700 text-gray-300">{seatBookings.length} total</Badge>
-                    </div>
-                    
-                    <div className="space-y-4 max-h-96 overflow-y-auto">
-                        {!Array.isArray(seatBookings) || seatBookings.length === 0 ? (
-                            <div className="text-center py-8 text-gray-500">
-                                <svg className="w-12 h-12 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" />
-                                </svg>
-                                <p>No seat bookings yet</p>
+            {/* Next Meeting Banner */}
+            {loading ? (
+                <Skeleton className="w-full h-32 rounded-xl" />
+            ) : nextMeeting ? (
+                <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-primary-600 to-indigo-700 p-6 sm:p-8 shadow-lg text-white">
+                    <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                        <div>
+                            <div className="flex items-center gap-2 text-primary-100 mb-2">
+                                <Clock className="h-4 w-4" />
+                                <span className="text-sm font-medium uppercase tracking-wider">Next up in {formatDistanceToNow(new Date(nextMeeting.startTime))}</span>
                             </div>
+                            <h2 className="text-2xl sm:text-3xl font-bold mb-1">
+                                {nextMeeting.room ? nextMeeting.room.name : `Seat ${nextMeeting.seat?.code}`}
+                            </h2>
+                            <p className="text-primary-100 flex items-center gap-2">
+                                <MapPin className="h-4 w-4" />
+                                {formatDate(nextMeeting.startTime)} - {formatDate(nextMeeting.endTime)}
+                            </p>
+                        </div>
+                        <div className="flex-shrink-0">
+                            <button
+                                onClick={() => nextMeeting.room ? checkInRoom(nextMeeting._id) : checkInSeat(nextMeeting._id)}
+                                className="w-full md:w-auto inline-flex items-center justify-center rounded-lg bg-white/20 hover:bg-white/30 px-6 py-3 text-sm font-semibold text-white backdrop-blur-md transition-colors"
+                            >
+                                Check In Now
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            ) : (
+                <div className="rounded-xl border border-dashed border-slate-300 p-8 text-center bg-slate-50">
+                    <Calendar className="mx-auto h-8 w-8 text-slate-400 mb-3" />
+                    <h3 className="text-lg font-medium text-slate-900">No upcoming bookings</h3>
+                    <p className="text-slate-500 mt-1">You're all clear! Book a seat or room to get started.</p>
+                </div>
+            )}
+
+            {/* Upcoming Bookings Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card>
+                    <CardHeader className="border-b border-slate-100 pb-4">
+                        <div className="flex items-center justify-between">
+                            <CardTitle className="text-lg flex items-center gap-2">
+                                <MonitorSmartphone className="h-5 w-5 text-slate-500" />
+                                Upcoming Seats
+                            </CardTitle>
+                            <Badge variant="primary">{safe(seatBookings).length}</Badge>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                        {loading ? (
+                            <div className="p-6 space-y-4"><Skeleton className="h-12 w-full"/><Skeleton className="h-12 w-full"/></div>
+                        ) : safe(seatBookings).length === 0 ? (
+                            <div className="p-8 text-center text-slate-500">No active seat bookings.</div>
                         ) : (
-                            seatBookings.map((booking) => {
-                                if (!booking || !booking._id) return null;
-                                return (
-                                    <Card key={booking._id} className="p-4 border border-gray-200">
-                                        <div className="flex items-start justify-between">
-                                            <div className="flex-1">
-                                                <div className="flex items-center space-x-2 mb-2">
-                                                    <span className="font-medium text-gray-900">Seat {booking.seat?.code || 'Unknown'}</span>
-                                                    {getStatusBadge(booking.status)}
-                                                </div>
-                                                <p className="text-sm text-gray-600 mb-1">
-                                                    {formatDate(booking.startTime)} - {formatDate(booking.endTime)}
-                                                </p>
-                                                {booking.purpose && (
-                                                    <p className="text-sm text-gray-500">{booking.purpose}</p>
-                                                )}
-                                            </div>
-                                            {booking.status === 'BOOKED' && (
-                                                <Button
-                                                    size="sm"
-                                                    onClick={() => handleSeatCheckIn(booking._id)}
-                                                >
-                                                    Check In
-                                                </Button>
+                            <div className="divide-y divide-slate-100 max-h-[400px] overflow-y-auto">
+                                {safe(seatBookings).map(b => (
+                                    <div key={b._id} className="p-4 hover:bg-slate-50 transition-colors flex justify-between items-center group">
+                                        <div>
+                                            <p className="font-semibold text-slate-900">Seat {b.seat?.code}</p>
+                                            <p className="text-xs text-slate-500 mt-0.5">{formatDate(b.startTime)}</p>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <Badge variant={b.status.toLowerCase()}>{b.status}</Badge>
+                                            {b.status === 'BOOKED' && (
+                                                <button onClick={() => checkInSeat(b._id)} className="text-primary-600 hover:text-primary-800 text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    Check in
+                                                </button>
                                             )}
                                         </div>
-                                    </Card>
-                                );
-                            })
+                                    </div>
+                                ))}
+                            </div>
                         )}
-                    </div>
+                    </CardContent>
                 </Card>
 
-                {/* Room Bookings */}
-                <Card className="p-6">
-                    <div className="flex items-center justify-between mb-6">
-                        <h2 className="text-xl font-semibold text-gray-900">My Room Bookings</h2>
-                        <Badge variant="default">{roomBookings.length} total</Badge>
-                    </div>
-                    
-                    <div className="space-y-4 max-h-96 overflow-y-auto">
-                        {!Array.isArray(roomBookings) || roomBookings.length === 0 ? (
-                            <div className="text-center py-8 text-gray-500">
-                                <svg className="w-12 h-12 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                                </svg>
-                                <p>No room bookings yet</p>
-                            </div>
+                <Card>
+                    <CardHeader className="border-b border-slate-100 pb-4">
+                        <div className="flex items-center justify-between">
+                            <CardTitle className="text-lg flex items-center gap-2">
+                                <Calendar className="h-5 w-5 text-slate-500" />
+                                Upcoming Rooms
+                            </CardTitle>
+                            <Badge variant="booked">{safe(roomBookings).length}</Badge>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                        {loading ? (
+                            <div className="p-6 space-y-4"><Skeleton className="h-12 w-full"/><Skeleton className="h-12 w-full"/></div>
+                        ) : safe(roomBookings).length === 0 ? (
+                            <div className="p-8 text-center text-slate-500">No active room bookings.</div>
                         ) : (
-                            roomBookings.map((booking) => {
-                                if (!booking || !booking._id) return null;
-                                return (
-                                    <Card key={booking._id} className="p-4 border border-gray-200">
-                                        <div className="flex items-start justify-between">
-                                            <div className="flex-1">
-                                                <div className="flex items-center space-x-2 mb-2">
-                                                    <span className="font-medium text-gray-900">Room {booking.room || 'Unknown'}</span>
-                                                    {getStatusBadge(booking.status)}
-                                                </div>
-                                                <p className="text-sm text-gray-600 mb-1">
-                                                    {formatDate(booking.startTime)} - {formatDate(booking.endTime)}
-                                                </p>
-                                                {booking.participants && Array.isArray(booking.participants) && booking.participants.length > 0 && (
-                                                    <p className="text-sm text-gray-500">
-                                                        {booking.participants.length} participants
-                                                    </p>
-                                                )}
-                                            </div>
-                                            {booking.status === 'BOOKED' && (
-                                                <Button
-                                                    size="sm"
-                                                    onClick={() => handleRoomCheckIn(booking._id)}
-                                                >
-                                                    Check In
-                                                </Button>
+                            <div className="divide-y divide-slate-100 max-h-[400px] overflow-y-auto">
+                                {safe(roomBookings).map(b => (
+                                    <div key={b._id} className="p-4 hover:bg-slate-50 transition-colors flex justify-between items-center group">
+                                        <div>
+                                            <p className="font-semibold text-slate-900">{b.room?.name || 'Room'}</p>
+                                            <p className="text-xs text-slate-500 mt-0.5">{formatDate(b.startTime)}</p>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <Badge variant={b.status.toLowerCase()}>{b.status}</Badge>
+                                            {b.status === 'BOOKED' && (
+                                                <button onClick={() => checkInRoom(b._id)} className="text-primary-600 hover:text-primary-800 text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    Check in
+                                                </button>
                                             )}
                                         </div>
-                                    </Card>
-                                );
-                            })
+                                    </div>
+                                ))}
+                            </div>
                         )}
-                    </div>
+                    </CardContent>
                 </Card>
             </div>
         </div>

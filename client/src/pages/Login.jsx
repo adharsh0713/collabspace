@@ -1,34 +1,32 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { loginUser } from '../services/authService';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useNavigate, Link } from 'react-router-dom';
-import { Card, Input, Button } from '../components/ui';
 
 const Login = () => {
-    const [form, setForm] = useState({
-        email: '',
-        password: '',
-    });
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
 
-    const { login } = useAuth();
+    const { user, login } = useAuth();
     const { success, error } = useToast();
     const navigate = useNavigate();
 
-    const handleChange = (e) => {
-        setForm((prev) => ({
-            ...prev,
-            [e.target.name]: e.target.value,
-        }));
-    };
+    // Redirect to dashboard if already logged in
+    useEffect(() => {
+        if (user) {
+            navigate('/dashboard');
+        }
+    }, [user, navigate]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setLoading(true);
+        if (!email || !password) return;
 
+        setLoading(true);
         try {
-            const data = await loginUser(form);
+            const data = await loginUser({ email, password });
             login(data);
             success('Login successful!');
             navigate('/dashboard');
@@ -40,98 +38,87 @@ const Login = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-900 flex items-center justify-center px-4 relative overflow-hidden">
-            {/* Background decoration */}
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-600/20 to-purple-600/20"></div>
-            <div className="absolute top-20 left-10 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl"></div>
-            <div className="absolute bottom-20 right-10 w-72 h-72 bg-purple-500/10 rounded-full blur-3xl"></div>
-            
-            {/* Login Card */}
-            <div className="relative z-10 w-full max-w-md">
-                <div className="bg-gray-800/90 backdrop-blur-sm rounded-2xl p-8 border border-gray-700 shadow-2xl">
-                    <div className="text-center mb-8">
-                        {/* Logo */}
-                        <div className="mx-auto w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mb-6">
-                            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                            </svg>
-                        </div>
-                        <h1 className="text-3xl font-bold text-white mb-2">Welcome Back</h1>
-                        <p className="text-gray-400">Sign in to your CollabSpace account</p>
-                    </div>
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+            <div className="w-full max-w-sm">
 
-                    <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Logo / Brand */}
+                <div className="text-center mb-8">
+                    <div className="inline-flex items-center justify-center w-11 h-11 bg-blue-600 rounded-xl mb-4">
+                        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                        </svg>
+                    </div>
+                    <h1 className="text-2xl font-bold text-gray-900">Welcome back</h1>
+                    <p className="text-sm text-gray-500 mt-1">Sign in to your CollabSpace account</p>
+                </div>
+
+                {/* Card */}
+                <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-6">
+                    <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+
+                        {/* Email */}
                         <div>
-                            <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">
-                                Email
+                            <label htmlFor="login-email" className="block text-sm font-medium text-gray-700 mb-1.5">
+                                Email address
                             </label>
                             <input
-                                id="email"
+                                id="login-email"
                                 type="email"
-                                name="email"
-                                placeholder="Enter your email"
-                                value={form.email}
-                                onChange={handleChange}
+                                autoComplete="email"
                                 required
-                                className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                                placeholder="you@company.com"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                className="w-full px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-lg placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                             />
                         </div>
 
+                        {/* Password */}
                         <div>
-                            <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-2">
+                            <label htmlFor="login-password" className="block text-sm font-medium text-gray-700 mb-1.5">
                                 Password
                             </label>
                             <input
-                                id="password"
+                                id="login-password"
                                 type="password"
-                                name="password"
-                                placeholder="Enter your password"
-                                value={form.password}
-                                onChange={handleChange}
+                                autoComplete="current-password"
                                 required
-                                className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                                placeholder="••••••••"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                className="w-full px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-lg placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                             />
                         </div>
 
+                        {/* Submit */}
                         <button
                             type="submit"
-                            disabled={loading}
-                            className="w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                            disabled={loading || !email || !password}
+                            className="w-full py-2.5 px-4 mt-2 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 active:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         >
                             {loading ? (
-                                <span className="flex items-center justify-center">
-                                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
-                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                <span className="flex items-center justify-center space-x-2">
+                                    <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
                                     </svg>
-                                    Signing in...
+                                    <span>Signing in...</span>
                                 </span>
-                            ) : (
-                                'Sign In'
-                            )}
+                            ) : 'Sign in'}
                         </button>
                     </form>
-
-                    <div className="mt-8 text-center">
-                        <p className="text-sm text-gray-400">
-                            Don't have an account?{' '}
-                            <Link to="/" className="text-blue-400 hover:text-blue-300 font-medium transition-colors">
-                                Contact your administrator
-                            </Link>
-                        </p>
-                    </div>
                 </div>
-                
-                {/* Back to Landing */}
-                <div className="text-center mt-6">
-                    <Link 
-                        to="/" 
-                        className="text-gray-400 hover:text-gray-300 text-sm transition-colors inline-flex items-center"
+
+                {/* Footer */}
+                <div className="text-center mt-5">
+                    <Link
+                        to="/"
+                        className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700 transition-colors"
                     >
-                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                         </svg>
-                        Back to Home
+                        Back to home
                     </Link>
                 </div>
             </div>

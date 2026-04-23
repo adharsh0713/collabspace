@@ -2,9 +2,20 @@ const Seat = require('../models/seat.model');
 const SeatBooking = require('../models/seatBooking.model');
 
 const createSeatBooking = async ({ userId, seatId, startTime, endTime, organizationId }) => {
+    const start = new Date(startTime);
+    const end = new Date(endTime);
+
     // validate time
-    if (new Date(startTime) >= new Date(endTime)) {
+    if (start >= end) {
         const error = new Error('Invalid time range');
+        error.statusCode = 400;
+        throw error;
+    }
+
+    // max duration: 12 hours
+    const durationHours = (end - start) / (1000 * 60 * 60);
+    if (durationHours > 12) {
+        const error = new Error('Booking duration cannot exceed 12 hours');
         error.statusCode = 400;
         throw error;
     }
@@ -21,12 +32,12 @@ const createSeatBooking = async ({ userId, seatId, startTime, endTime, organizat
     }
 
     if (seat.status !== 'AVAILABLE') {
-        const error = new Error('Seat not available');
+        const error = new Error('Seat is closed or under maintenance');
         error.statusCode = 400;
         throw error;
     }
 
-    // overlap check (clean)
+    // overlap check (clean) - adding 15 min buffer between bookings could be complex here, keeping strict overlap check
     const conflict = await SeatBooking.findOne({
         seat: seatId,
         status: 'BOOKED',
@@ -145,7 +156,26 @@ const getSeats = async ({ page = 1, limit = 10, floor, status, organizationId })
     };
 
     if (floor) query.floor = Number(floor);
-    if (status) query.status = status;
+
+    const now = new Date();
+    // Get currently active bookings
+    const activeBookings = await SeatBooking.find({
+        organization: organizationId,
+        status: 'BOOKED',
+        startTime: { $lte: now },
+        endTime: { $gt: now }
+    }).select('seat').lean();
+
+    const bookedSeatIds = activeBookings.map(b => b.seat.toString());
+
+    if (status === 'MAINTENANCE' || status === 'CLOSED') {
+        query.status = status;
+    } else if (status === 'AVAILABLE') {
+        query._id = { $nin: bookedSeatIds };
+        query.status = 'AVAILABLE';
+    } else if (status === 'BOOKED') {
+        query._id = { $in: bookedSeatIds };
+    }
 
     const skip = (page - 1) * limit;
 
@@ -154,8 +184,15 @@ const getSeats = async ({ page = 1, limit = 10, floor, status, organizationId })
         Seat.countDocuments(query),
     ]);
 
+    const mappedSeats = seats.map(seat => {
+        if (seat.status === 'AVAILABLE' && bookedSeatIds.includes(seat._id.toString())) {
+            return { ...seat, status: 'BOOKED' };
+        }
+        return seat;
+    });
+
     return {
-        seats,
+        seats: mappedSeats,
         total,
         page: Number(page),
         pages: Math.ceil(total / limit),

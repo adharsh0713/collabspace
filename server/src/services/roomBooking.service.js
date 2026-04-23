@@ -1,5 +1,7 @@
 const Room = require('../models/room.model');
 const RoomBooking = require('../models/roomBooking.model');
+const User = require('../models/user.model');
+const { sendBookingConfirmation } = require('../utils/emailService');
 
 const createRoomBooking = async ({
                                      hostId,
@@ -26,11 +28,30 @@ const createRoomBooking = async ({
         throw error;
     }
 
+    // domain policies
+    const start = new Date(startTime);
+    const end = new Date(endTime);
+    const durationHours = (end - start) / (1000 * 60 * 60);
+
+    if (durationHours > 4) {
+        const error = new Error('Max booking duration is 4 hours');
+        error.statusCode = 400;
+        throw error;
+    }
+
+    const now = new Date();
+    const daysInAdvance = (start - now) / (1000 * 60 * 60 * 24);
+    if (daysInAdvance > 30) {
+        const error = new Error('Cannot book more than 30 days in advance');
+        error.statusCode = 400;
+        throw error;
+    }
+
     // capacity check (host + participants)
     const totalPeople = 1 + participants.length;
 
     if (totalPeople > room.capacity) {
-        const error = new Error('Exceeds room capacity');
+        const error = new Error(`Exceeds room capacity of ${room.capacity}`);
         error.statusCode = 400;
         throw error;
     }
@@ -63,8 +84,29 @@ const createRoomBooking = async ({
         organization: organizationId,
     });
 
+    // Populate room and host details for the email
+    await booking.populate('room', 'name');
+    const host = await User.findById(hostId);
+
+    // Collect emails
+    const emailsToNotify = [];
+    if (host && host.email) emailsToNotify.push(host.email);
+    
+    participants.forEach(p => {
+        if (p.email) emailsToNotify.push(p.email);
+    });
+
+    // Fire & Forget Emails (do not await so it doesn't block response)
+    const uniqueEmails = [...new Set(emailsToNotify)];
+    uniqueEmails.forEach(email => {
+        sendBookingConfirmation(booking, email).catch(err => {
+            console.error(`Failed to send email to ${email}:`, err.message);
+        });
+    });
+
     return booking;
 };
+
 
 const checkInRoomBooking = async ({ bookingId, userId }) => {
     const booking = await RoomBooking.findById(bookingId);
