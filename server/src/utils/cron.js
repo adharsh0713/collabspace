@@ -9,7 +9,7 @@ const startCronJobs = () => {
             console.log('Cron running at:', new Date());
             const now = new Date();
 
-            const GRACE_PERIOD_MINUTES = 60;
+            const GRACE_PERIOD_MINUTES = 15;
             const cutoff = new Date(now.getTime() - GRACE_PERIOD_MINUTES * 60000);
 
             // Seat bookings

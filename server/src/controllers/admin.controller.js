@@ -1,5 +1,4 @@
 const asyncHandler = require('../utils/asyncHandler');
-const { createOrganizationWithAdmin } = require('../services/admin.service');
 const Seat = require('../models/seat.model');
 const Room = require('../models/room.model');
 const User = require('../models/user.model');
@@ -16,7 +15,40 @@ const createUser = async (req, res) => {
 
     res.status(201).json({
         success: true,
-        data: user,
+        data: {
+            id: user._id,
+            name: user.name,
+            email: user.email,
+            role: user.role
+        },
+    });
+};
+
+// list users
+const listUsers = async (req, res) => {
+    const users = await User.find({
+        organization: req.user.organizationId,
+        role: 'USER',
+    }).select('-password').lean();
+
+    res.json({
+        success: true,
+        data: users,
+    });
+};
+
+// remove user
+const removeUser = async (req, res) => {
+    const { userId } = req.params;
+    await User.findOneAndDelete({
+        _id: userId,
+        organization: req.user.organizationId,
+        role: 'USER'
+    });
+
+    res.json({
+        success: true,
+        data: { id: userId },
     });
 };
 
@@ -40,15 +72,6 @@ const createRoom = async (req, res) => {
     res.status(201).json({ success: true, data: room });
 };
 
-const createOrg = asyncHandler(async (req, res) => {
-    const data = await createOrganizationWithAdmin(req.body);
-
-    res.status(201).json({
-        success: true,
-        data,
-    });
-});
-
 const getRooms = async (req, res) => {
     const rooms = await Room.find({
         organization: req.user.organizationId,
@@ -58,9 +81,10 @@ const getRooms = async (req, res) => {
 };
 
 module.exports = {
-    createOrg,
     createSeat,
     createRoom,
     createUser,
+    listUsers,
+    removeUser,
     getRooms
 };

@@ -1,7 +1,7 @@
 const express = require('express');
 const authMiddleware = require('../middleware/auth.middleware');
 const authorizeRoles = require('../middleware/role.middleware');
-const { createOrg, createSeat, createRoom, getRooms, createUser } = require('../controllers/admin.controller');
+const { createSeat, createRoom, getRooms, createUser, listUsers, removeUser } = require('../controllers/admin.controller');
 
 const router = express.Router();
 
@@ -19,11 +19,11 @@ router.post(
     createRoom
 );
 
-router.post(
-    '/organizations',
+router.get(
+    '/users',
     authMiddleware,
-    authorizeRoles('SUPER_ADMIN'),
-    createOrg
+    authorizeRoles('ADMIN'),
+    listUsers
 );
 
 router.post(
@@ -31,6 +31,13 @@ router.post(
     authMiddleware,
     authorizeRoles('ADMIN'),
     createUser
+);
+
+router.delete(
+    '/users/:userId',
+    authMiddleware,
+    authorizeRoles('ADMIN'),
+    removeUser
 );
 
 router.get('/rooms', authMiddleware, authorizeRoles('ADMIN'), getRooms);

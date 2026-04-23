@@ -1,20 +1,29 @@
 import React from 'react';
+import { cn } from '../../utils/cn';
 
-const Badge = ({ children, variant = 'default', className = '' }) => {
+const Badge = ({ children, variant = 'default', className = '', ...props }) => {
   const variants = {
-    default: 'bg-gray-100 text-gray-800',
-    available: 'bg-status-available text-white',
-    booked: 'bg-status-booked text-white',
-    maintenance: 'bg-status-maintenance text-white',
-    closed: 'bg-status-closed text-white',
-    success: 'bg-green-100 text-green-800',
-    error: 'bg-red-100 text-red-800',
-    warning: 'bg-yellow-100 text-yellow-800',
+    default: 'bg-slate-100 text-slate-800',
+    primary: 'bg-primary-100 text-primary-800',
+    available: 'bg-emerald-100 text-emerald-800',
+    booked: 'bg-indigo-100 text-indigo-800',
+    maintenance: 'bg-amber-100 text-amber-800',
+    closed: 'bg-rose-100 text-rose-800',
+    success: 'bg-success-100 text-success-800',
+    error: 'bg-danger-100 text-danger-800',
+    warning: 'bg-warning-100 text-warning-800',
     info: 'bg-blue-100 text-blue-800'
   };
   
   return (
-    <span className={`px-2 py-1 rounded-full text-xs font-medium ${variants[variant]} ${className}`}>
+    <span 
+      className={cn(
+        "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2", 
+        variants[variant] || variants.default,
+        className
+      )}
+      {...props}
+    >
       {children}
     </span>
   );

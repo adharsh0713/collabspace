@@ -14,8 +14,10 @@ app.use(
 app.use(express.json());
 
 const adminRoutes = require('./routes/admin.routes');
+const superAdminRoutes = require('./routes/superAdmin.routes');
 
 app.use('/api/admin', adminRoutes);
+app.use('/api/super-admin', superAdminRoutes);
 
 const authRoutes = require('./routes/auth.routes');
 

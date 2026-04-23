@@ -8,8 +8,11 @@ import Seats from "./pages/Seats";
 import Rooms from "./pages/Rooms";
 import Admin from "./pages/Admin";
 import Analytics from "./pages/Analytics";
+import Employees from "./pages/Employees";
+import SuperAdminDashboard from "./pages/SuperAdminDashboard";
 import ProtectedRoute from "./routes/ProtectedRoute";
 import AdminRoute from "./routes/AdminRoute";
+import SuperAdminRoute from "./routes/SuperAdminRoute";
 import AppLayout from "./components/layout/AppLayout";
 
 const AppRoutes = () => {
@@ -61,6 +64,28 @@ const AppRoutes = () => {
               <Admin />
             </AppLayout>
           </AdminRoute>
+        }
+      />
+
+      <Route
+        path="/employees"
+        element={
+          <AdminRoute>
+            <AppLayout>
+              <Employees />
+            </AppLayout>
+          </AdminRoute>
+        }
+      />
+
+      <Route
+        path="/superadmin"
+        element={
+          <SuperAdminRoute>
+            <AppLayout>
+              <SuperAdminDashboard />
+            </AppLayout>
+          </SuperAdminRoute>
         }
       />
     </Routes>

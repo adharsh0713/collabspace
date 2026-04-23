@@ -14,11 +14,14 @@
   "dependencies": {
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
+    "date-fns": "^4.1.0",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.3.3",
     "node-cron": "^4.2.1",
+    "nodemailer": "^8.0.5",
+    "qrcode": "^1.5.4",
     "socket.io": "^4.8.3",
     "tree-cli": "^0.6.7"
   },
